@@ -1,12 +1,14 @@
 "use client"
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Task from "./component/task";
+import { TaskBox } from "./component/task_box";
 
 
 
 
 const navItems = [
-  { href: "/home_page/day", label: "Day" },
+  { href: "/home_page/day" , label: "Day" },
   { href: "/home_page/week", label: "Week" },
   { href: "/home_page/month", label: "Month" },
 ];
@@ -22,12 +24,15 @@ export function Overview({
 
 
 
+
     return(
-        <div>
+        <div className="">
             {/* header */}
             <div className="text-[32px] font-bold text-(--font) mb-4">Overview</div>
+            {/* task */}
+            <Task />
 
-            <div className="p-4 w-full rounded-4xl bg-(--color2) relative">
+            <div className="p-4 w-[1100px] rounded-4xl bg-(--color2) relative shadow-[inset_2px_2px_4px_rgba(255,255,255,0.18),4px_4px_4px_rgba(0,0,0,0.55)] ">
 
                 <div className="relative flex items-center bg-(--color5) w-[273px] h-[36px] justify-around border-2 border-(--font) rounded-4xl overflow-hidden">
                     {/* active background */}
@@ -44,7 +49,7 @@ export function Overview({
                         return (
                         <Link
                             key={item.href}
-                            href={item.href}
+                            href={item.href} replace
                             className={`
                                 relative z-10 flex-1 h-full flex items-center justify-center
                                 font-bold transition-colors duration-300

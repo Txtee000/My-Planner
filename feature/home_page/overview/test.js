@@ -1,1 +1,0 @@
-const hourse = arrayRange(0, 23); // สร้าง array ของชั่วโมง (0-23)

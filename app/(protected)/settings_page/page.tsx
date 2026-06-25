@@ -1,7 +1,7 @@
 'use client'
 
-import { Navbar } from "@/components/navbar";
-import { Setting_account } from "@/feature/settings_page/components/setting_account";
+import { Setting_account } from "@/feature/settings_page/setting_account/setting_account";
+import Setting_task from "@/feature/settings_page/setting_task/setting_task";
 
 
 
@@ -14,6 +14,7 @@ export default function Settings(){
         <div className="">
             
             <Setting_account />
+            <Setting_task />
         </div>
     );
 }

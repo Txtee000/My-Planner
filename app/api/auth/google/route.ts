@@ -2,10 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse } from "next/server";
 
 function getSafeNextPath(request: NextRequest) {
-  const next = request.nextUrl.searchParams.get("next") ?? "/home_page";
+  const next = request.nextUrl.searchParams.get("next") ?? "/home_page/day";  // คือ
 
-  if (!next.startsWith("/") || next.startsWith("//")) {
-    return "/home_page";
+  if (!next.startsWith("/") || next.startsWith("//")) { // ป้องกันการโจมตีแบบ open redirect
+    return "/home_page/login";
   }
 
   return next;

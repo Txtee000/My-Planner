@@ -18,7 +18,6 @@ export async function GET() {
         .eq("id", user.user.id)
         .maybeSingle();
 
-    console.log(account);
     return NextResponse.json({user, account}, {status: 200});
 }
 

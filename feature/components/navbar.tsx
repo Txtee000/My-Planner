@@ -29,8 +29,8 @@ const navItems = [
     label: "Timelines",
   },
   {
-    href: "/earns_page",
-    activePath: "/earns_page",
+    href: "/earn_page",
+    activePath: "/earn_page",
     icon: "money_bag",
     label: "Earns",
   },
@@ -72,7 +72,7 @@ export function Navbar() {
   }, []);
 
   return (
-    <div className="fixed z-100">
+    <div className="fixed z-20">
         <div className=" flex justify-between items-center p-4 w-[240px] h-[72px] bg-(--color2) shadow-[inset_4px_2px_5px_rgba(255,255,255,0.18),0_6px_8px_rgba(0,0,0,0.55)] rounded-3xl text-[20px] font-bold text-(--font)"> 
             <div className="flex items-center">
                 <div className="rounded-[100%] bg-white w-[36px] h-[36px]"></div>
