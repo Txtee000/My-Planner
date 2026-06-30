@@ -4,7 +4,6 @@ create table public.timeline_items(
     category_id uuid not null,
 
     title text not null,
-    position int not null, --เอาไว้เเสดงตอน day month
 
 
     start_date date not null,

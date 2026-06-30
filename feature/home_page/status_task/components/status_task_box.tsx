@@ -4,7 +4,8 @@
 
 import { CreateTask } from "@/feature/components/create_task/create_task";
 import { EditTask } from "@/feature/components/create_task/edit_task";
-import { getTasks, updateTask } from "@/services/taskService";
+import { useTaskMutations } from "@/hooks/task_items/useTaskMutations";
+import { useTasksQuery } from "@/hooks/task_items/useTasksQuery";
 import { type DragEvent, useCallback, useEffect, useState } from "react";
 
 const colorVariants = {
@@ -70,29 +71,19 @@ type StatusTaskProps = {
 export function Status_Task_Box({type, label, refreshKey, onTasksChanged}: StatusTaskProps){
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [tasks, setTasks] = useState<Task[]>([])
     const [isDragOver, setIsDragOver] = useState(false);
     
     const color = colorVariants[type]
 
-    const fetchTasks = useCallback(async () => {
-        const data = await getTasks({
-            taskStatus: type,
-            position: true,
-        });
-        setTasks(Array.isArray(data) ? data : []);
-    }, [type]);
+    const { data: tasksData } = useTasksQuery({
+        taskStatus: type,
+        position: true,
+    });
+    const tasks = Array.isArray(tasksData) ? tasksData : [];
+    const { updateTask: updateTaskAsync } = useTaskMutations();
 
-    useEffect(() => {
-        const timeoutId = window.setTimeout(() => {
-            void fetchTasks();
-        }, 0);
-
-        return () => window.clearTimeout(timeoutId);
-    }, [fetchTasks, refreshKey]);
 
     async function handleTasksChanged(){
-        await fetchTasks();
         onTasksChanged();
     }
 
@@ -130,7 +121,7 @@ export function Status_Task_Box({type, label, refreshKey, onTasksChanged}: Statu
         const nextPosition = lastPosition + 1000;
 
         try{
-            await updateTask({
+            await updateTaskAsync({
                 id: draggedTask.id,
                 category_id: draggedTask.category_id,
                 title: draggedTask.title ?? "",

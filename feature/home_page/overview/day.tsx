@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react"; 
 import { Calendar_day } from "./component/calendar";
-import { getTasks } from "@/services/taskService";
+import { getTimeline_items } from "@/services/timelineService";
+import { EditTimeline } from "@/feature/components/edit_timeline";
+import { useTasksQuery } from "@/hooks/task_items/useTasksQuery";
 
 export function OverviewDay(){
 
@@ -11,7 +13,7 @@ export function OverviewDay(){
     const [date, setDate] = useState<Date>(new Date());
     const [currentTimeLeft, setCurrentTimeLeft] = useState(0); // ตำแหน่งของเส้นเวลาปัจจุบัน (หน่วยเป็นพิกเซล)
 
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const [timelines, setTimeline] = useState<Timeline_item[]>([]);
 
     // ขนาดความยาว timeline
     const hours = Array.from({ length: 24 }, (_, i) => i); 
@@ -21,23 +23,30 @@ export function OverviewDay(){
     
 
     const [selectedDate, setSelectedDate] = useState(new Date());
-
+    const [editingTimeline,setEditingTimeline] = useState<Timeline_item | null>(null);
     
+
+    const { data: tasksData } = useTasksQuery({
+        deadline_date: date.toString()
+    });
+
+    const tasks = Array.isArray(tasksData) ? tasksData : [];
     
 
     
 
     useEffect(() => {
         onPressedCurrentButton();
-        fetchData();
+        fetchTimelines();
         
         
     } , []);
 
-    async function fetchData(){
-        const strDate = date.toString();
-        const data = await getTasks({deadline_date: strDate})
-        setTasks(data);
+    
+    async function fetchTimelines() {
+        const timelines = await getTimeline_items();
+        setTimeline(timelines);
+        
     }
 
 
@@ -70,7 +79,7 @@ export function OverviewDay(){
         setDate(now); // อัปเดตวันที่เป็นปัจจุบัน
         setCurrentTimeLeft(getCurrentTimePosition(now));
         contactCurrentLine(now)
-        await fetchData();
+        await fetchTimelines();
         
     }
     // เลื่อนหน้าจอไปหาเส้นระบุเวลา
@@ -92,9 +101,9 @@ export function OverviewDay(){
             setCurrentTimeLeft(getCurrentTimePosition(date));
             contactCurrentLine(date)
         }
-
-        
     }, [date]);
+
+    
     function isSameDate(a: Date, b: Date) {
         return (
             a.getFullYear() === b.getFullYear() &&
@@ -121,6 +130,64 @@ export function OverviewDay(){
         
         return totalHours * hourWidth;
     }
+
+    function getTimelineDurationWidth(item: Timeline_item, currentDate: Date){
+        // แปลงวันที่ของ item และวันที่เปิดดูให้อยู่ในรูปแบบ YYYY-MM-DD เพื่อเช็คประเภทวัน
+        const formatYMD = (d: Date) => d.toISOString().split('T')[0];
+        
+        // "YYYY-MM-DD"
+        const viewDateStr = formatYMD(currentDate);
+        const startStr = item.start_date; 
+        const endStr = item.end_date;     
+
+        // เช็คก่อนว่าไอเทมนี้อยู่ในช่วงวันที่เปิดดูไหม ถ้าไม่อยู่ไม่ต้องวาด
+        if (viewDateStr < startStr || viewDateStr > endStr) {
+            return { shouldRender: false, left: 0, width: 0 };
+        }
+
+        // แปลงเวลาเริ่มต้น/สิ้นสุดเป็นทศนิยมชั่วโมง (เช่น "01:30" -> 1.5)
+        const timeToHours = (tStr: string) => {
+            if (!tStr) return 0;
+            const [h, m] = tStr.split(":").map(Number);
+            return h + (m / 60);
+        };
+
+        let startHour = 0;
+        let endHour = 24; // ค่าเริ่มต้นให้เต็มวันไว้ก่อน
+
+        const isStartDay = viewDateStr === startStr;
+        const isEndDay = viewDateStr === endStr;
+
+        if (isStartDay && isEndDay) {
+            // กรณีวันเดียวกัน (จบในวัน)
+            startHour = timeToHours(item.start_time);
+            endHour = timeToHours(item.end_time);
+        } else if (isStartDay) {
+            // วันแรกของทาสก์ข้ามวัน -> เริ่มตามเวลาทาสก์ จบสิ้นวัน (24:00)
+            startHour = timeToHours(item.start_time);
+            endHour = 24;
+        } else if (isEndDay) {
+            // วันสุดท้ายของทาสก์ข้ามวัน -> เริ่มต้นวัน (00:00) จบตามเวลาทาสก์
+            startHour = 0;
+            endHour = timeToHours(item.end_time);
+        } else {
+            // วันตรงกลางของทาสก์ข้ามวัน -> แสดงเต็มวัน
+            startHour = 0;
+            endHour = 24;
+        }
+        // คำนวณเป็นพิกเซล
+        const leftPx = startHour * hourWidth;
+        const widthPx = (endHour - startHour) * hourWidth;
+
+        return {
+            shouldRender: true,
+            left: leftPx,
+            width: widthPx
+        };
+
+    }
+
+    
     
 
 
@@ -202,6 +269,45 @@ export function OverviewDay(){
                                 </div>
                             );
                         })}
+                        {timelines.map((item, index) => {
+                            // เรียกใช้ฟังก์ชันที่คุณเขียนไว้ โดยส่งไอเทมและ state วันที่เปิดดู (date) เข้าไป
+                            const metrics = getTimelineDurationWidth(item, date);
+                            if (!metrics || !metrics.shouldRender) return null;
+
+
+                            function handleEditTimeline(){
+                                setEditingTimeline(item);
+                            }
+
+                            return (
+                                <button
+                                    key={item.id || index}
+                                    onClick={handleEditTimeline}
+                                    className="absolute h-[36px] rounded-lg text-white text-xs px-3 flex items-center shadow-md overflow-hidden whitespace-nowrap border border-white/10 select-none transition-all hover:brightness-110"
+                                    style={{
+                                        // อย่าลืมบวกด้วย timelinePaddingLeft เพื่อให้ตำแหน่งซิงค์กับแนวเส้นชั่วโมง
+                                        left: `${metrics.left + timelinePaddingLeft}px`,
+                                        width: `${metrics.width}px`,
+                                        // ดึงสีตามประเภทงานมาแสดง (ถ้ามีฟิลด์สีแบบโค้ดก่อนหน้า) หรือใช้สีสำรอง
+                                        backgroundColor: item.task_categories?.color_hex || '#4B5563', 
+                                        // 💡 กำหนดระยะห่างจากขอบบน เพื่อไม่ให้ไปทับกับ Task Deadline ข้างบน
+                                        top: `${index * 40}px`
+                                    }}
+                                    // แสดงรายละเอียดเวลาเมื่อเอาเมาส์ไปชี้ (Tooltip)
+                                    title={`${item.title} (${item.start_date} ${item.start_time} - ${item.end_date} ${item.end_time})`}
+                                >
+                                    {/* แสดงชื่อของ Timeline */}
+                                    <span className="font-semibold truncate">{item.title}</span>
+                                </button>
+                            );
+                        })}
+                        {editingTimeline && (
+                            <EditTimeline
+                                item={editingTimeline}
+                                onClose={() => setEditingTimeline(null)}
+                                onUpdated={fetchTimelines}
+                            />
+                        )}
 
                         {/* current vertical line */}
                         <div 

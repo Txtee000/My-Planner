@@ -1,5 +1,5 @@
 import { EditTask } from "@/feature/components/create_task/edit_task";
-import { getTask, getTasks } from "@/services/taskService";
+import { useSingleTaskQuery } from "@/hooks/task_items/useTasksQuery";
 import { useEffect, useState } from "react";
 
 type TaskBoxProps = {
@@ -26,9 +26,11 @@ export function TaskBox({id, taskStatus, taskname, date, time }: TaskBoxProps) {
     const year = taskTime.getFullYear();
     const dateString =  taskTime.toLocaleDateString("en-US", {weekday: "short", })
 
-    const [task, setTask] = useState<EditableTask>();
     const [isOpen, setIsOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+
+    const { data: taskData } = useSingleTaskQuery({ taskId: id });
+    const task = Array.isArray(taskData) ? taskData[0] : undefined;
 
 
     function getStatus() {
@@ -46,21 +48,8 @@ export function TaskBox({id, taskStatus, taskname, date, time }: TaskBoxProps) {
         }
       }
 
-      useEffect(() => {
-        fetchData();
-        // const test=  task?.deadline_date
-        // console.log(new Date(test!));
-        // console.log("== ", new Date());
-        // console.log(new Date(test!) <  new Date());
-      }, [isOpen])
 
-      async function fetchData(){
-        const data = await getTask({
-          taskId: id,
-        })
-        setTask(data[0]);
-        
-      }
+      
     
       async function openEditTask(){
         setIsOpen(!isOpen);

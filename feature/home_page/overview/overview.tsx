@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Task from "./component/task";
-import { TaskBox } from "./component/task_box";
 
 
 
@@ -21,6 +20,8 @@ export function Overview({
     const pathname = usePathname();
     const activeIndex = navItems.findIndex((item) => item.href === pathname);
     const safeActiveIndex = activeIndex === -1 ? 0 : activeIndex;
+
+    
 
 
 

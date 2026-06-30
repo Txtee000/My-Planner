@@ -3,7 +3,7 @@
 import { Navbar } from "@/feature/components/navbar";
 import { Overview } from "@/feature/home_page/overview/overview";
 import { Status_Task } from "@/feature/home_page/status_task/status_task";
-
+import QueryProvider from "@/lib/provider/QueryProvider";
 
 
 export default function Homepage({
@@ -13,8 +13,11 @@ export default function Homepage({
 }>) {
     return(
         <div className="mx-6 my-2">
-            <Overview>{children}</Overview>
-            <Status_Task />
+            <QueryProvider>
+                <Overview>{children}</Overview>
+                <Status_Task />
+            </QueryProvider>
+            
         </div>
     );
 }

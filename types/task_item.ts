@@ -1,5 +1,19 @@
 
 
+type TaskFilterParams = {
+    taskType?: TaskType;
+    taskStatus?: TaskStatus;
+    excludeTaskStatus?: TaskStatus;
+    position?: boolean;
+    created_at?: boolean;
+    categoryId?: string;
+    isAllDay?: boolean;
+    overdue?: boolean;
+    taskId?: string;
+    deadline_date?: string;
+
+}
+
 
 type Task = {
     id: string;
@@ -45,18 +59,11 @@ type UpdateTaskData = {
     description?: string | null;
 };
 
-type TaskCategory = {
-    id: string;
-    task_type: TaskCategoryType;
-    task_group: TaskGroup | null;
-    title: string;
-    color_hex: string;
-};
 
 type TaskStatus = "not_started" | "in_progress" | "done";
+type TaskType = "task" | "timeline";
 
-type TaskCategoryType = "task" | "activity";
-type TaskGroup = "study" | "work";
+
 
 type TaskDeadlineValue = {
     date: Date;

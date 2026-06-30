@@ -1,21 +1,5 @@
 
-
-type GetTasksParams = {
-    taskStatus?: TaskStatus;
-    excludeTaskStatus?: TaskStatus;
-    position?: boolean;
-    created_at?: boolean;
-    categoryId?: string;
-    isAllDay?: boolean;
-    overdue?: boolean;
-    taskId?: string;
-    deadline_date?: string;
-    
-
-};
-
-
-export async function getTask(params: GetTasksParams ={}){
+export async function getTask(params: TaskFilterParams ={}){
     const searchParams = new URLSearchParams();
 
     if(params.taskId){
@@ -45,9 +29,12 @@ export async function getTask(params: GetTasksParams ={}){
     return tasks;
 }
 
-export async function getTasks(params: GetTasksParams = {}){
+export async function getTasks(params: TaskFilterParams = {}){
     const searchParams = new URLSearchParams();
 
+    if(params.taskType){
+        searchParams.set("task_type", params.taskType);
+    }
     if(params.taskStatus){
         searchParams.set("task_status", params.taskStatus);
     }

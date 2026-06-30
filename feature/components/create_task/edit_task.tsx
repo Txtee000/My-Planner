@@ -1,8 +1,8 @@
 "use client"
 
 import { CalendarForTask } from "@/feature/components/create_task/calendar_for_task";
+import { useTaskMutations } from "@/hooks/task_items/useTaskMutations";
 import { getTaskCategories } from "@/services/taskCategoryService";
-import { deleteTask, updateTask } from "@/services/taskService";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -48,6 +48,8 @@ function getInitialDeadline(task: EditableTask): TaskDeadlineValue{
 
 export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
+    const { updateTask, deleteTask } = useTaskMutations();
+
 
     const router = useRouter();
     const [title, setTitle] = useState(task.title ?? "");
@@ -58,7 +60,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
     const [selectedTaskType, setSelectedTaskType] = useState<TaskCategoryType>("task");
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<TaskGroup>("study");
     const [selectedTaskCategory, setSelectedTaskCategory] = useState(task.category_id ?? "");
-    const [selectedStatus, setSelectedStatus] = useState<TaskStatus>(task.task_status!);
+    const [selectedStatus, setSelectedStatus] = useState<TaskStatus>(task.task_status || "not_started");
 
 
     const [openSelectTaskCategory, setOpenSelectTaskCategory] = useState<SelectBoxType>("");
@@ -168,6 +170,10 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
         setSelectedTaskCategory(categoryId);
         setOpenSelectTaskCategory("");
     }
+    function handleSelectStatus(status: TaskStatus){
+        setSelectedStatus(status);
+        setOpenSelectTaskCategory("");
+    }
 
     async function submitForm(){
         if(isSubmitting || isSubmitDisabled){
@@ -184,7 +190,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                 title,
                 position: task.position,
                 date: taskDeadline,
-                task_status: task.task_status ?? "not_started",
+                task_status: selectedStatus,
                 description: taskComment,
             });
 
@@ -202,7 +208,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     function renderSelectTaskCategoryBox(){
        return(
-         <div className="w-[160px] rounded-2xl border border-[var(--color3)]/20 bg-[var(--color2)] p-2 text-[var(--font)] shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
+         <div className="min-w-[160px] rounded-2xl border border-[var(--color3)]/20 bg-[var(--color2)] p-2 text-[var(--font)] shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
             {openSelectTaskCategory == "taskType" && (
                 <div className="space-y-2">
                     <button
@@ -314,6 +320,62 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                     )}
                 </div>
             )}
+
+            {openSelectTaskCategory === "taskStatus" && (
+                <div className="space-y-2">
+                    <button
+                        type="button"
+                        onClick={() => handleSelectStatus("not_started")}
+                        className={`
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            ${selectedStatus === "not_started"
+                                ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
+                                : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
+                            }
+                        `}
+                    >
+                        <div className="flex items-center gap-2 mr-4">
+                            <span className="h-3 w-3 shrink-0 rounded-full bg-[#bebebe]" />
+                            <div className="text-[16px] font-bold">Not Started</div>
+                        </div>
+                        {selectedStatus === "not_started" && <span className="material-symbols-outlined !text-[20px]">check</span>}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleSelectStatus("in_progress")}
+                        className={`
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            ${selectedStatus === "in_progress"
+                                ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
+                                : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
+                            }
+                        `}
+                    >
+                        <div className="flex items-center gap-2 mr-4">
+                            <span className="h-3 w-3 shrink-0 rounded-full bg-[#FCC951]" />
+                            <div className="text-[16px] font-bold">In Progress</div>
+                        </div>
+                        {selectedStatus === "in_progress" && <span className="material-symbols-outlined !text-[20px]">check</span>}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleSelectStatus("done")}
+                        className={`
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            ${selectedStatus === "done"
+                                ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
+                                : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
+                            }
+                        `}
+                    >
+                        <div className="flex items-center gap-2 mr-4">
+                            <span className="h-3 w-3 shrink-0 rounded-full bg-[#5EC45E]" />
+                            <div className="text-[16px] font-bold">Done</div>
+                        </div>
+                        {selectedStatus === "done" && <span className="material-symbols-outlined !text-[20px]">check</span>}
+                    </button>
+                </div>
+            )}
         </div>
        );
     }
@@ -415,17 +477,22 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         </div>
 
                         {openSelectTaskCategory == "taskType" && (
-                            <div className="absolute left-[96px] top-[190px] z-20">
+                            <div className="absolute left-[96px] top-[222px] z-20">
                                 {renderSelectTaskCategoryBox()}
                             </div>
                         )}
                         {openSelectTaskCategory == "taskGroup" && (
-                            <div className="absolute left-[196px] top-[190px] z-20">
+                            <div className="absolute left-[196px] top-[222px] z-20">
                                 {renderSelectTaskCategoryBox()}
                             </div>
                         )}
                         {openSelectTaskCategory == "taskCategory" && (
-                            <div className={`absolute top-[190px] z-20 ${selectedTaskType === "task" ? "left-[296px]" : "left-[196px]"}`}>
+                            <div className={`absolute top-[222px] z-20 ${selectedTaskType === "task" ? "left-[296px]" : "left-[196px]"}`}>
+                                {renderSelectTaskCategoryBox()}
+                            </div>
+                        )}
+                        {openSelectTaskCategory === "taskStatus" && (
+                            <div className="absolute left-[120px] top-[180px] z-20">
                                 {renderSelectTaskCategoryBox()}
                             </div>
                         )}

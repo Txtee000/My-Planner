@@ -1,26 +1,19 @@
 "use client"
 import { useEffect, useState } from "react";
 import { TaskBox } from "./task_box";
-import { getTasks } from "@/services/taskService";
+import { useTaskMutations } from "@/hooks/task_items/useTaskMutations";
+import { useTasksQuery } from "@/hooks/task_items/useTasksQuery";
 
 
 export default function Task() {
     const [isOpen, setIsOpen] = useState(false);
-    const [tasks, setTasks] = useState<Task[]>([]);
 
+    const { data: tasksData, isLoading } = useTasksQuery({
+        overdue: true,
+        taskType: "task",
+    });
+    const tasks = Array.isArray(tasksData) ? tasksData : [];
 
-
-    useEffect(() => {
-        async function fetchData(){
-            const data = await getTasks({
-                overdue: true,
-                taskType: "task",
-            })
-            setTasks(Array.isArray(data) ? data : []);
-        }
-
-        fetchData()
-    }, [isOpen])
     
     return(
         <div className=" fixed z-50 top-8 right-[3%] " >

@@ -135,7 +135,6 @@ export function CreateTask({statusLabel, onClose, onCreated}: CreateTaskProps){
                 position: nextPos,
                 date: taskDeadline,
                 task_status: selectedStatus,
-                task_type: "task",
                 description: taskComment,
             });
 
