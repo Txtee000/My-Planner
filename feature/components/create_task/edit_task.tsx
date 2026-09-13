@@ -59,7 +59,12 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     const [selectedTaskType, setSelectedTaskType] = useState<TaskCategoryType>("task");
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<TaskGroup>("study");
-    const [selectedTaskCategory, setSelectedTaskCategory] = useState(task.category_id ?? "");
+    const [selectedTaskCategories, setSelectedTaskCategories] = useState<string[]>(() => {
+        if (task.category_ids && task.category_ids.length > 0) {
+            return task.category_ids;
+        }
+        return task.category_id ? [task.category_id] : [];
+    });
     const [selectedStatus, setSelectedStatus] = useState<TaskStatus>(task.task_status || "not_started");
 
 
@@ -78,9 +83,12 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
         ? groupedCategories.activity
         : groupedCategories[selectedTaskGroup];
 
-    const selectedCategory = selectedCategoryList.find((category) => category.id === selectedTaskCategory);
+    const selectedCategoryObjects = useMemo(() => {
+        return categories.filter((cat) => selectedTaskCategories.includes(cat.id));
+    }, [categories, selectedTaskCategories]);
+
     const isBusy = isSubmitting || isDeleting;
-    const isSubmitDisabled = !selectedTaskCategory || !title.trim() || isBusy;
+    const isSubmitDisabled = selectedTaskCategories.length === 0 || !title.trim() || isBusy;
 
     const fetchTaskCategories = useCallback(async () => {
         try{
@@ -103,7 +111,11 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
-            const category = categories.find((item) => item.id === selectedTaskCategory);
+            const firstCatId = selectedTaskCategories[0];
+            if (!firstCatId) {
+                return;
+            }
+            const category = categories.find((item) => item.id === firstCatId);
             if(!category){
                 return;
             }
@@ -115,7 +127,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
         }, 0);
 
         return () => window.clearTimeout(timeoutId);
-    }, [categories, selectedTaskCategory]);
+    }, [categories, selectedTaskCategories]);
 
     function handleSelectType(type: SelectBoxType){
         if(type === openSelectTaskCategory){
@@ -128,7 +140,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     function handleSelectTaskType(type: TaskCategoryType){
         setSelectedTaskType(type);
-        setSelectedTaskCategory("");
+        setSelectedTaskCategories([]);
         if(type === "activity"){
             setSelectedTaskGroup("study");
         }
@@ -163,13 +175,19 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     function handleSelectTaskGroup(group: TaskGroup){
         setSelectedTaskGroup(group);
-        setSelectedTaskCategory("");
+        setSelectedTaskCategories([]);
     }
 
     function handleSelectTaskCategory(categoryId: string){
-        setSelectedTaskCategory(categoryId);
-        setOpenSelectTaskCategory("");
+        setSelectedTaskCategories((prev) => {
+            if (prev.includes(categoryId)) {
+                return prev.filter((id) => id !== categoryId);
+            } else {
+                return [...prev, categoryId];
+            }
+        });
     }
+    
     function handleSelectStatus(status: TaskStatus){
         setSelectedStatus(status);
         setOpenSelectTaskCategory("");
@@ -186,7 +204,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
         try{
             await updateTask({
                 id: task.id,
-                category_id: selectedTaskCategory,
+                category_ids: selectedTaskCategories,
                 title,
                 position: task.position,
                 date: taskDeadline,
@@ -208,14 +226,14 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
 
     function renderSelectTaskCategoryBox(){
        return(
-         <div className="min-w-[160px] rounded-2xl border border-[var(--color3)]/20 bg-[var(--color2)] p-2 text-[var(--font)] shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
+         <div className="min-w-[180px] rounded-2xl border border-[var(--color3)]/20 bg-[var(--color2)] p-2 text-[var(--font)] shadow-[0_16px_36px_rgba(0,0,0,0.45)]">
             {openSelectTaskCategory == "taskType" && (
                 <div className="space-y-2">
                     <button
                         type="button"
                         onClick={() => handleSelectTaskType("task")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedTaskType === "task"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -232,7 +250,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectTaskType("activity")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedTaskType === "activity"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -253,7 +271,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectTaskGroup("study")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedTaskGroup === "study"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -270,7 +288,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectTaskGroup("work")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedTaskGroup === "work"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -292,31 +310,34 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                             No categories
                         </div>
                     ) : (
-                        selectedCategoryList.map((category) => (
-                            <button
-                                key={category.id}
-                                type="button"
-                                onClick={() => handleSelectTaskCategory(category.id)}
-                                className={`
-                                    flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition
-                                    ${selectedTaskCategory === category.id
-                                        ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
-                                        : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
-                                    }
-                                `}
-                            >
-                                <div className="flex min-w-0 items-center gap-2">
-                                    <span
-                                        className="h-3 w-3 shrink-0 rounded-full"
-                                        style={{ backgroundColor: category.color_hex }}
-                                    />
-                                    <div className="truncate text-[15px] font-bold">{category.title}</div>
-                                </div>
-                                {selectedTaskCategory === category.id && (
-                                    <span className="material-symbols-outlined !text-[20px]">check</span>
-                                )}
-                            </button>
-                        ))
+                        selectedCategoryList.map((category) => {
+                            const isSelected = selectedTaskCategories.includes(category.id);
+                            return (
+                                <button
+                                    key={category.id}
+                                    type="button"
+                                    onClick={() => handleSelectTaskCategory(category.id)}
+                                    className={`
+                                        flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left transition cursor-pointer
+                                        ${isSelected
+                                            ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
+                                            : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
+                                        }
+                                    `}
+                                >
+                                    <div className="flex min-w-0 items-center gap-2">
+                                        <span
+                                            className="h-3 w-3 shrink-0 rounded-full"
+                                            style={{ backgroundColor: category.color_hex }}
+                                        />
+                                        <div className="truncate text-[15px] font-bold">{category.title}</div>
+                                    </div>
+                                    {isSelected && (
+                                        <span className="material-symbols-outlined !text-[20px]">check</span>
+                                    )}
+                                </button>
+                            );
+                        })
                     )}
                 </div>
             )}
@@ -327,7 +348,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectStatus("not_started")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedStatus === "not_started"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -344,7 +365,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectStatus("in_progress")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedStatus === "in_progress"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -361,7 +382,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={() => handleSelectStatus("done")}
                         className={`
-                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition
+                            flex w-full items-center justify-between rounded-xl border p-3 text-left transition cursor-pointer
                             ${selectedStatus === "done"
                                 ? "border-[var(--color4)] bg-[var(--color4)]/10 text-[var(--color4)]"
                                 : "border-transparent bg-[var(--color1)] text-[var(--font)]/80 hover:border-[var(--color4)]/60 hover:text-[var(--font)]"
@@ -399,7 +420,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                         type="button"
                         onClick={onClose}
                         disabled={isBusy}
-                        className="flex justify-center rounded-xl border border-[var(--color3)]/20 bg-[var(--color1)] px-4 py-2 text-[14px] font-bold text-[var(--font)] transition hover:border-[var(--color4)] hover:text-[var(--color4)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex justify-center rounded-xl border border-[var(--color3)]/20 bg-[var(--color1)] px-4 py-2 text-[14px] font-bold text-[var(--font)] transition hover:border-[var(--color4)] hover:text-[var(--color4)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -411,13 +432,13 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                             <input
                                 value={title}
                                 onChange={(event) => setTitle(event.target.value)}
-                                className="h-full text-[32px] font-bold"
+                                className="h-full text-[32px] font-bold bg-transparent border-none outline-none text-white w-full"
                             />
                         </div>
 
 
                         {/* status bar */}
-                        <div className="flex items-center mt-4">
+                        <div className="relative flex items-center mt-4">
                             <span className="material-symbols-outlined">
                                 stat_0
                             </span>
@@ -425,81 +446,104 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                             <button
                                 type="button"
                                 onClick={() => handleSelectType("taskStatus")}
-                                className="ml-2 flex items-center gap-2 rounded-4xl bg-gray-500 px-4 py-[1px] font-bold text-(--font)"
+                                className="ml-2 flex items-center gap-2 rounded-4xl bg-gray-500 px-4 py-[1px] font-bold text-(--font) cursor-pointer"
                             >
                                 <span className={`h-3 w-3 shrink-0 rounded-full ${statusColors[selectedStatus]}`} />
                                 <span className="capitalize">{selectedStatus.replace("_", " ")}</span>
                             </button>
+
+                            {openSelectTaskCategory === "taskStatus" && (
+                                <div className="absolute left-[120px] top-full mt-2 z-50">
+                                    {renderSelectTaskCategoryBox()}
+                                </div>
+                            )}
                         </div>
 
 
-                        <div className="mt-4 flex items-center">
+                        <div className="flex flex-wrap items-center mt-4 gap-x-2 gap-y-3">
                             <span className="material-symbols-outlined !text-[24px]">
                                 format_list_bulleted
                             </span>
-                            <div className="ml-2 text-[16px] font-bold">Type:</div>
-                            <button
-                                type="button"
-                                onClick={() => handleSelectType("taskType")}
-                                className="ml-2 rounded-4xl bg-gray-500 px-4 py-[1px] font-bold text-(--font)"
-                            >
-                                {selectedTaskType === "task" ? "Task" : "Activity"}
-                            </button>
-
-                            {selectedTaskType == "task" && (
+                            <div className="text-[16px] font-bold">Type:</div>
+                            
+                            <div className="relative">
                                 <button
                                     type="button"
-                                    onClick={() => handleSelectType("taskGroup")}
-                                    className="ml-2 rounded-4xl bg-gray-500 px-4 py-[1px] font-bold text-(--font)"
+                                    onClick={() => handleSelectType("taskType")}
+                                    className="px-4 py-[1px] bg-gray-500 text-(--font) rounded-4xl font-bold cursor-pointer"
                                 >
-                                    {selectedTaskGroup === "study" ? "Study" : "Work"}
+                                    {selectedTaskType === "task" ? "Task" : "Activity"}
                                 </button>
+                                {openSelectTaskCategory == "taskType" && (
+                                    <div className="absolute left-0 top-full mt-2 z-50">
+                                        {renderSelectTaskCategoryBox()}
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedTaskType == "task" && (
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSelectType("taskGroup")}
+                                        className="px-4 py-[1px] bg-gray-500 text-(--font) rounded-4xl font-bold cursor-pointer"
+                                    >
+                                        {selectedTaskGroup === "study" ? "Study" : "Work"}
+                                    </button>
+                                    {openSelectTaskCategory == "taskGroup" && (
+                                        <div className="absolute left-0 top-full mt-2 z-50">
+                                            {renderSelectTaskCategoryBox()}
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
-                            <button
-                                type="button"
-                                onClick={() => handleSelectType("taskCategory")}
-                                className={`
-                                    ml-2 rounded-4xl border px-4 py-[1px] font-bold transition
-                                    ${selectedCategory
-                                        ? "shadow-[0_0_0_2px_rgba(255,255,255,0.08)]"
-                                        : "border-transparent bg-gray-500 text-(--font)"
-                                    }
-                                `}
-                                style={selectedCategory ? {
-                                    backgroundColor: selectedCategory.color_hex,
-                                    borderColor: selectedCategory.color_hex,
-                                    color: getReadableTextColor(selectedCategory.color_hex),
-                                } : undefined}
-                            >
-                                {selectedCategory?.title ?? "Category"}
-                            </button>
-                        </div>
+                            {/* Multiple Category selector container */}
+                            {selectedCategoryObjects.map((category) => (
+                                <div
+                                    key={category.id}
+                                    className="flex items-center gap-1 rounded-4xl border px-3 py-[1px] font-bold text-xs transition"
+                                    style={{
+                                        backgroundColor: category.color_hex,
+                                        borderColor: category.color_hex,
+                                        color: getReadableTextColor(category.color_hex),
+                                    }}
+                                >
+                                    <span className="text-[16px] font-bold">{category.title}</span>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelectTaskCategory(category.id);
+                                        }}
+                                        className="flex items-center justify-center rounded-full hover:bg-white/25 p-0.5 cursor-pointer"
+                                        aria-label={`Remove category ${category.title}`}
+                                    >
+                                        <span className="material-symbols-outlined !text-[12px] leading-none">close</span>
+                                    </button>
+                                </div>
+                            ))}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectType("taskCategory")}
+                                    className="flex items-center rounded-4xl bg-gray-500 hover:bg-gray-400 px-3 py-[2.5px] font-bold text-xs text-(--font) transition cursor-pointer "
+                                >
+                                    <span className="material-symbols-outlined !text-[14px] leading-none">add</span>
+                                    <span className="text-[16px] font-bold">Category</span>
+                                </button>
 
-                        {openSelectTaskCategory == "taskType" && (
-                            <div className="absolute left-[96px] top-[222px] z-20">
-                                {renderSelectTaskCategoryBox()}
+                                {openSelectTaskCategory == "taskCategory" && (
+                                    <div className="absolute left-0 top-full mt-2 z-50">
+                                        {renderSelectTaskCategoryBox()}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                        {openSelectTaskCategory == "taskGroup" && (
-                            <div className="absolute left-[196px] top-[222px] z-20">
-                                {renderSelectTaskCategoryBox()}
-                            </div>
-                        )}
-                        {openSelectTaskCategory == "taskCategory" && (
-                            <div className={`absolute top-[222px] z-20 ${selectedTaskType === "task" ? "left-[296px]" : "left-[196px]"}`}>
-                                {renderSelectTaskCategoryBox()}
-                            </div>
-                        )}
-                        {openSelectTaskCategory === "taskStatus" && (
-                            <div className="absolute left-[120px] top-[180px] z-20">
-                                {renderSelectTaskCategoryBox()}
-                            </div>
-                        )}
+                        </div>
 
                         <div className="mt-4 rounded-4xl border-t-2 border-(--color2)" />
 
-                        <div className="mt-4 h-[60%]">
+                        <div className="mt-4 h-[55%]">
                             <textarea
                                 value={taskComment}
                                 onChange={(event) => setTaskComment(event.target.value)}
@@ -514,7 +558,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                                     type="button"
                                     onClick={handleDeleteTask}
                                     disabled={isBusy}
-                                    className="mr-auto flex h-11 items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-5 text-[15px] font-bold text-red-300 transition hover:border-red-300 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="mr-auto flex h-11 items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-5 text-[15px] font-bold text-red-300 transition hover:border-red-300 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                 >
                                     {isDeleting && (
                                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200/30 border-t-red-200" />
@@ -531,7 +575,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                                 type="button"
                                 onClick={onClose}
                                 disabled={isBusy}
-                                className="h-11 rounded-xl border border-[var(--color3)]/20 bg-transparent px-5 text-[15px] font-bold text-[var(--color3)] transition hover:border-[var(--color4)] hover:text-[var(--font)] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-11 rounded-xl border border-[var(--color3)]/20 bg-transparent px-5 text-[15px] font-bold text-[var(--color3)] transition hover:border-[var(--color4)] hover:text-[var(--font)] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -539,7 +583,7 @@ export function EditTask({task, onClose, onUpdated}: EditTaskProps){
                                 type="button"
                                 onClick={submitForm}
                                 disabled={isSubmitDisabled}
-                                className="flex h-11 items-center gap-2 rounded-xl bg-[var(--color4)] px-6 text-[15px] font-bold text-[var(--font)] shadow-[0_10px_24px_rgba(0,173,181,0.22)] transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[var(--color3)]/25 disabled:text-[var(--color3)] disabled:shadow-none disabled:hover:brightness-100 disabled:active:scale-100"
+                                className="flex h-11 items-center gap-2 rounded-xl bg-[var(--color4)] px-6 text-[15px] font-bold text-[var(--font)] shadow-[0_10px_24px_rgba(0,173,181,0.22)] transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[var(--color3)]/25 disabled:text-[var(--color3)] disabled:shadow-none disabled:hover:brightness-100 disabled:active:scale-100 cursor-pointer"
                             >
                                 {isSubmitting && (
                                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--font)]/30 border-t-[var(--font)]" />

@@ -18,7 +18,7 @@ export default function Task() {
     return(
         <div className=" fixed z-50 top-8 right-[3%] " >
             <div>
-                <button onClick={() => setIsOpen(!isOpen)} className={`text-white w-12 h-12 bg-(--color2)  rounded-4xl flex justify-center items-center  duration-100
+                <button onClick={() => setIsOpen(!isOpen)} className={`text-white w-12 h-12 bg-(--color1)  rounded-4xl flex justify-center items-center  duration-100
                 ${!isOpen ? "shadow-[inset_1px_1px_4px_rgba(255,255,255,0.18),2px_4px_4px_rgba(0,0,0,0.55)]": ""}`}>
                     <div  className="material-symbols-outlined">
                         event_list 

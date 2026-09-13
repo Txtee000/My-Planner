@@ -33,9 +33,9 @@ export function useTaskMutations() {
 
   return {
     // ฟังก์ชันสำหรับนำไปผูกกับเหตุการณ์ (เช่น onClick หรือ onSubmit)
-    addTask: addTaskMutation.mutate,
-    updateTask: updateTaskMutation.mutate,
-    deleteTask: deleteTaskMutation.mutate,
+    addTask: addTaskMutation.mutateAsync,
+    updateTask: updateTaskMutation.mutateAsync,
+    deleteTask: deleteTaskMutation.mutateAsync,
 
     // สถานะ Loading เอาไว้ทำ UI รอโหลด เช่น ปุ่มหมุนๆ หรือปิดปุ่มชั่วคราว
     isAdding: addTaskMutation.isPending,

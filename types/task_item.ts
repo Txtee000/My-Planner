@@ -18,7 +18,8 @@ type TaskFilterParams = {
 type Task = {
     id: string;
     user_id: string;
-    category_id: string | null;
+    category_id: string | null; // For backward compatibility
+    category_ids: string[];     // Array of linked category IDs
     title: string;
     position: number;
     deadline_date: string;
@@ -32,6 +33,7 @@ type Task = {
 type EditableTask = {
     id: string;
     category_id: string | null;
+    category_ids: string[];
     title: string;
     position: number;
     deadline_date: string | null;
@@ -41,7 +43,7 @@ type EditableTask = {
     is_all_day: boolean;
 };
 type AddTaskData = {
-    category_id?: string | null;
+    category_ids: string[];
     title: string;
     position: number | null;
     date: TaskDeadlineValue;
@@ -51,7 +53,7 @@ type AddTaskData = {
 
 type UpdateTaskData = {
     id: string;
-    category_id?: string | null;
+    category_ids?: string[];
     title: string;
     position?: number;
     date: TaskDeadlineValue;

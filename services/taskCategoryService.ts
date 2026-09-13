@@ -25,6 +25,7 @@ export async function getTaskCategories(params: GetTaskCategoriesParams = {}){
             method: "GET",
         }
     );
+    
     if(!response.ok){
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to fetch task categories data");

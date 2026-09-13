@@ -102,7 +102,7 @@ export async function getTaskWithMaxPositionByStatus(taskStatus: TaskStatus){
 }
 
 export async function addTask({
-    category_id,
+    category_ids,
     title,
     position,
     date,
@@ -116,7 +116,7 @@ export async function addTask({
     const response = await fetch("/api/task_items",{
         method: "POST",
         body: JSON.stringify({
-            category_id: category_id,
+            category_ids: category_ids,
             title,
             position,
             deadline_date: deadline.date,
@@ -137,7 +137,7 @@ export async function addTask({
 
 export async function updateTask({
     id,
-    category_id,
+    category_ids,
     title,
     position,
     date,
@@ -152,7 +152,7 @@ export async function updateTask({
         method: "PATCH",
         body: JSON.stringify({
             id,
-            category_id,
+            category_ids,
             title,
             position,
             deadline_date: deadline.date,

@@ -98,14 +98,14 @@ export function Table(){
 
 
     return(
-       <div className="w-[1180px]">
+       <div className="">
             <div className="w-full flex items-center justify-between">
                 <div className="text-white text-[32px] font-bold leading-none">Timeline Table</div>
                 <div className="flex items-center">
                     {/* search bar */}
                     <div className="flex bg-[#343639] w-[500px] p-[8px] rounded-4xl shadow-[2px_3px_5px_rgba(255,255,255,0.3)]">
                         <input 
-                            className=" w-full  text-gray-300 text-[18px]"
+                            className=" w-full  text-gray-300 text-[18px] px-1 rounded-2xl"
                             type="text"
                             value={search}
                             placeholder="Type to seach..."
@@ -160,12 +160,12 @@ export function Table(){
             <table className="w-full">
                 <thead>
                     <tr className="text-left border-b-2 border-(--color2)">
-                        <th className="text-(--font) text-[24px] py-4 w-[220px] max-w-[220px]">Name</th>
-                        <th className="text-(--font) text-[24px] py-4 w-[192px] max-w-[192px]">Start</th>
-                        <th className="text-(--font) text-[24px] py-4 w-[192px] max-w-[192px]">End</th>
-                        <th className="text-(--font) text-[24px] py-4 w-[192px] max-w-[192px]">Type</th>
-                        <th className="text-(--font) text-[24px] py-4 w-[320px] max-w-[320px]">Comment</th>
-                        <th className="text-(--font) text-[24px] w-[24px] max-w-[24px] py-4"></th>
+                        <th className="text-(--font) text-[24px] py-4 pl-4 w-[220px] max-w-[220px]">Name</th>
+                        <th className="text-(--font) text-[24px] py-4 pl-4 w-[192px] max-w-[192px]">Start</th>
+                        <th className="text-(--font) text-[24px] py-4 pl-4 w-[192px] max-w-[192px]">End</th>
+                        <th className="text-(--font) text-[24px] py-4  pl-4 w-[192px] max-w-[192px]">Type</th>
+                        <th className="text-(--font) text-[24px] py-4 pl-4 w-[320px] max-w-[320px]">Comment</th>
+                        <th className="text-(--font) text-[24px] pl-4 w-[24px] max-w-[24px] py-4"></th>
                     </tr>
                 </thead>
                 
@@ -203,35 +203,35 @@ export function Table(){
                             hover:translate-x-1"
                             onClick={handleEdit}
                         >
-                            <td className="text-[16px] text-(--font) py-4 mr-4 w-[160px] break-all">
+                            <td className="text-[16px] text-(--font) py-4 pl-4 mr-4 max-w-[160px] overflow-auto">
                                 <div className=" pr-2">
                                     {item.title}
                                 </div>
                             </td>
-                            <td className="text-[16px] text-(--font) py-4 mr-4 w-[140px] overflow-auto">{item.start_date} <br/> {item.start_time}</td>
-                            <td className="text-[16px] text-(--font) py-4 mr-4 w-[140px] overflow-auto">{item.end_date} <br/> {item.end_time}</td>
-                            <td className="text-[16px] text-(--font) py-4 mr-4 w-[140px]"> 
+                            <td className="text-[16px] text-(--font) py-4 pl-4 mr-4 w-[140px] overflow-auto">{item.start_date} <br/> {item.start_time}</td>
+                            <td className="text-[16px] text-(--font) py-4 pl-4 mr-4 w-[140px] overflow-auto">{item.end_date} <br/> {item.end_time}</td>
+                            <td className="text-[16px] text-(--font) py-4 pl-4 mr-4 w-[140px]"> 
                                 <div className="flex w-full flex-wrap gap-2">
-                                    <div className="px-[8px] px-[2px] min-w-[80px] rounded-xl bg-gray-500 text-center">
+                                    <div className="px-[8px]  min-w-[80px] rounded-xl bg-gray-500 text-center">
                                         {taskType}
                                     </div>
                                     {taskType == "task" && (
-                                        <div className="px-[8px] px-[2px] min-w-[80px] rounded-xl bg-gray-500 text-center">
+                                        <div className="px-[8px]  min-w-[80px] rounded-xl bg-gray-500 text-center">
                                             {taskGroup} 
                                         </div>
                                     )}
-                                    <div className="px-[8px] px-[2px] min-w-[80px] rounded-xl text-center" style={{backgroundColor: category.color_hex}}>
+                                    <div className="px-[8px]  min-w-[80px] rounded-xl text-center" style={{backgroundColor: category.color_hex}}>
                                         {taskCategory}
                                     </div>
                                 </div>
                             </td>
-                            <td className="text-[16px] text-(--font) py-4  mr-4 w-[240px]  break-all">
+                            <td className="text-[16px] text-(--font) py-4 pl-4 mr-4 w-[240px]  break-all">
                                 <div className="max-h-[90px] overflow-auto">
                                     {item.description}
                                 </div>
                                 
                             </td>
-                            <td className="w-[40px] py-4 text-center">
+                            <td className="w-[40px] py-4 pl-4 text-center">
                                 <button 
                                     onClick={handleDelete}
                                     className="flex items-center justify-center p-2 rounded-full hover:bg-red-500/10 transition-colors"

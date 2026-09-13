@@ -121,9 +121,15 @@ export function Status_Task_Box({type, label, refreshKey, onTasksChanged}: Statu
         const nextPosition = lastPosition + 1000;
 
         try{
+            const categoryIds = draggedTask.category_ids && draggedTask.category_ids.length > 0
+                ? draggedTask.category_ids
+                : draggedTask.category_id
+                ? [draggedTask.category_id]
+                : [];
+
             await updateTaskAsync({
                 id: draggedTask.id,
-                category_id: draggedTask.category_id,
+                category_ids: categoryIds,
                 title: draggedTask.title ?? "",
                 position: nextPosition,
                 date: getDeadlineValue(draggedTask),

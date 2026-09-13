@@ -95,14 +95,27 @@ export async function GET(request: Request){
 
     let query = supabase
         .from("task_items")
-        .select("*")
+        .select(`
+            *,
+            task_item_categories (
+                category_id
+            )
+        `)
         .eq("user_id", user.user.id)
     if(taskStatus){
         query = query.eq("task_status", taskStatus);
     }
 
     if(categoryId){
-        query = query.eq("category_id", categoryId);
+        const { data: relations, error: relError } = await supabase
+            .from("task_item_categories")
+            .select("task_item_id")
+            .eq("category_id", categoryId);
+        if (relError) {
+            return NextResponse.json({ message: relError.message }, { status: 400 });
+        }
+        const taskIds = relations?.map((r) => r.task_item_id) || [];
+        query = query.in("id", taskIds);
     }
 
     if(isAllDay){
@@ -139,7 +152,17 @@ export async function GET(request: Request){
         return NextResponse.json({ message: tasksError.message }, { status: 400 });
     }
 
-    return NextResponse.json({ tasks }, { status: 200 });
+    const formattedTasks = tasks?.map((task: any) => {
+        const { task_item_categories, ...rest } = task;
+        const category_ids = task_item_categories?.map((c: any) => c.category_id) || [];
+        return {
+            ...rest,
+            category_id: category_ids[0] || null,
+            category_ids: category_ids,
+        };
+    }) || [];
+
+    return NextResponse.json({ tasks: formattedTasks }, { status: 200 });
 }
 
 export async function POST(request: Request){
@@ -151,7 +174,7 @@ export async function POST(request: Request){
     }
 
     const {
-        category_id,
+        category_ids = [],
         title,
         position,
         deadline_date,
@@ -185,13 +208,20 @@ export async function POST(request: Request){
         return NextResponse.json({ message: "All day tasks must not include deadline time" }, { status: 400 });
     }
 
-    if(category_id && !(await isUserCategory(supabase, category_id, user.user.id))){
-        return NextResponse.json({ message: "Invalid category" }, { status: 400 });
+    if (!Array.isArray(category_ids) || category_ids.some(id => typeof id !== "string")) {
+        return NextResponse.json({ message: "Invalid category_ids format" }, { status: 400 });
+    }
+
+    if(category_ids.length > 0){
+        for (const catId of category_ids) {
+            if (!(await isUserCategory(supabase, catId, user.user.id))) {
+                return NextResponse.json({ message: `Invalid category: ${catId}` }, { status: 400 });
+            }
+        }
     }
 
     const payload = {
         user_id: user.user.id,
-        category_id: category_id || null,
         title: title.trim(),
         position,
         deadline_date,
@@ -201,7 +231,7 @@ export async function POST(request: Request){
         is_all_day,
     };
 
-    const { data, error } = await supabase
+    const { data: task, error } = await supabase
         .from("task_items")
         .insert(payload)
         .select("*")
@@ -211,7 +241,29 @@ export async function POST(request: Request){
         return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ task: data }, { status: 201 });
+    if (category_ids.length > 0) {
+        const relations = category_ids.map((catId: string) => ({
+            task_item_id: task.id,
+            category_id: catId,
+        }));
+        const { error: relError } = await supabase
+            .from("task_item_categories")
+            .insert(relations);
+        
+        if (relError) {
+            // Rollback task insert
+            await supabase.from("task_items").delete().eq("id", task.id);
+            return NextResponse.json({ message: "Failed to link categories: " + relError.message }, { status: 400 });
+        }
+    }
+
+    return NextResponse.json({
+        task: {
+            ...task,
+            category_id: category_ids[0] || null,
+            category_ids: category_ids,
+        }
+    }, { status: 201 });
 }
 
 export async function PATCH(request: Request){
@@ -224,7 +276,7 @@ export async function PATCH(request: Request){
 
     const {
         id,
-        category_id,
+        category_ids,
         title,
         position,
         deadline_date,
@@ -262,12 +314,19 @@ export async function PATCH(request: Request){
         return NextResponse.json({ message: "Invalid deadline time" }, { status: 400 });
     }
 
-    if(category_id && !(await isUserCategory(supabase, category_id, user.user.id))){
-        return NextResponse.json({ message: "Invalid category" }, { status: 400 });
+    if (category_ids !== undefined) {
+        if (!Array.isArray(category_ids) || category_ids.some(id => typeof id !== "string")) {
+            return NextResponse.json({ message: "Invalid category_ids format" }, { status: 400 });
+        }
+
+        for (const catId of category_ids) {
+            if (!(await isUserCategory(supabase, catId, user.user.id))) {
+                return NextResponse.json({ message: `Invalid category: ${catId}` }, { status: 400 });
+            }
+        }
     }
 
     const payload: {
-        category_id?: string | null;
         title?: string;
         position?: number;
         deadline_date?: string | null;
@@ -280,9 +339,6 @@ export async function PATCH(request: Request){
         updated_at: new Date().toISOString(),
     };
 
-    if(category_id !== undefined){
-        payload.category_id = category_id || null;
-    }
     if(title !== undefined){
         payload.title = title.trim();
     }
@@ -308,7 +364,7 @@ export async function PATCH(request: Request){
         }
     }
 
-    const { data, error } = await supabase
+    const { data: task, error } = await supabase
         .from("task_items")
         .update(payload)
         .eq("id", id)
@@ -320,7 +376,45 @@ export async function PATCH(request: Request){
         return NextResponse.json({ message: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ task: data }, { status: 200 });
+    if (category_ids !== undefined) {
+        const { error: deleteError } = await supabase
+            .from("task_item_categories")
+            .delete()
+            .eq("task_item_id", id);
+        
+        if (deleteError) {
+            return NextResponse.json({ message: "Failed to update category links: " + deleteError.message }, { status: 400 });
+        }
+
+        if (category_ids.length > 0) {
+            const relations = category_ids.map((catId: string) => ({
+                task_item_id: id,
+                category_id: catId,
+            }));
+            const { error: insertError } = await supabase
+                .from("task_item_categories")
+                .insert(relations);
+            
+            if (insertError) {
+                return NextResponse.json({ message: "Failed to update category links: " + insertError.message }, { status: 400 });
+            }
+        }
+    }
+
+    // Get final list of linked categories to return to client
+    const { data: relations } = await supabase
+        .from("task_item_categories")
+        .select("category_id")
+        .eq("task_item_id", id);
+    const finalCategoryIds = relations?.map((r) => r.category_id) || [];
+
+    return NextResponse.json({
+        task: {
+            ...task,
+            category_id: finalCategoryIds[0] || null,
+            category_ids: finalCategoryIds,
+        }
+    }, { status: 200 });
 }
 
 export async function DELETE(request: Request){
